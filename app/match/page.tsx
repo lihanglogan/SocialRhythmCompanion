@@ -6,8 +6,8 @@ import { QuickMatch } from './components/QuickMatch';
 import { CustomMatch } from './components/CustomMatch';
 import { NearbyUsers } from './components/NearbyUsers';
 import { PlannedMatch } from './components/PlannedMatch';
-import { MatchHistory } from './components/MatchHistory';
-import { MatchSettings } from './components/MatchSettings';
+import MatchHistory from './components/MatchHistory';
+import MatchSettings from './components/MatchSettings';
 import { Users, Clock, MapPin, Settings, History, Zap } from 'lucide-react';
 
 type TabType = 'quick' | 'custom' | 'nearby' | 'planned' | 'history' | 'settings';

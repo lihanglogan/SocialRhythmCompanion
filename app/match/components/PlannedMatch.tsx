@@ -19,7 +19,7 @@ import {
   Bookmark,
   Share2
 } from 'lucide-react';
-import { PlannedMatch as PlannedMatchType, PlaceCategory, CrowdLevel } from '@/types';
+import { PlannedMatch as PlannedMatchType, PlaceCategory, CrowdLevel, NoiseLevel } from '@/types';
 
 export function PlannedMatch() {
   const [activeTab, setActiveTab] = useState<'browse' | 'create'>('browse');
@@ -115,25 +115,30 @@ export function PlannedMatch() {
         coordinates: { lat: 39.9365, lng: 116.4477 },
         category: PlaceCategory.OTHER,
         currentStatus: {
-          crowdLevel: CrowdLevel.LOW,
-          waitTime: 0,
-          lastUpdated: new Date()
+          isOpen: true,
+          queueLength: 0,
+          estimatedWaitTime: 0,
+          lastUpdated: new Date(),
+          crowdDensity: 0.3
         },
         waitTime: 0,
-        noiseLevel: 'low',
+        crowdLevel: CrowdLevel.LOW,
+        noiseLevel: NoiseLevel.QUIET,
         accessibility: {
           wheelchairAccessible: true,
           hasElevator: false,
-          hasParking: true
+          hasRamp: true,
+          hasAccessibleParking: true,
+          hasAccessibleRestroom: true
         },
         openHours: {
-          monday: { open: '06:00', close: '21:00' },
-          tuesday: { open: '06:00', close: '21:00' },
-          wednesday: { open: '06:00', close: '21:00' },
-          thursday: { open: '06:00', close: '21:00' },
-          friday: { open: '06:00', close: '21:00' },
-          saturday: { open: '06:00', close: '21:00' },
-          sunday: { open: '06:00', close: '21:00' }
+          monday: [{ open: '06:00', close: '21:00' }],
+          tuesday: [{ open: '06:00', close: '21:00' }],
+          wednesday: [{ open: '06:00', close: '21:00' }],
+          thursday: [{ open: '06:00', close: '21:00' }],
+          friday: [{ open: '06:00', close: '21:00' }],
+          saturday: [{ open: '06:00', close: '21:00' }],
+          sunday: [{ open: '06:00', close: '21:00' }]
         }
       },
       plannedTime: new Date('2024-12-21T07:00:00'),

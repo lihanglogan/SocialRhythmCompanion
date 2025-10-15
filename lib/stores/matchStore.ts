@@ -85,6 +85,9 @@ interface MatchState {
   joinPlannedMatch: (matchId: string) => Promise<void>;
   fetchPlannedMatches: () => Promise<void>;
   
+  // 匹配模拟
+  simulateMatching: () => Promise<void>;
+  
   // 清理操作
   clearError: () => void;
   reset: () => void;
@@ -248,7 +251,7 @@ export const useMatchStore = create<MatchState>()(
           set({
             currentMatch: {
               ...currentMatch,
-              status: MatchStatus.CONFIRMED
+              status: MatchStatus.ACTIVE
             },
             isLoading: false
           });
