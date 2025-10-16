@@ -6,6 +6,7 @@ interface AppState {
   // UI状态
   theme: 'light' | 'dark' | 'system';
   sidebarOpen: boolean;
+  sidebarCollapsed: boolean;
   mobileMenuOpen: boolean;
   searchOpen: boolean;
   isMobile: boolean;
@@ -35,6 +36,10 @@ interface AppState {
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
+  toggleSidebarCollapse: () => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  collapseSidebar: () => void;
+  expandSidebar: () => void;
   toggleMobileMenu: () => void;
   setMobileMenuOpen: (open: boolean) => void;
   toggleSearch: () => void;
@@ -69,7 +74,8 @@ export const useAppStore = create<AppState>()(
       (set, get) => ({
         // 初始状态
         theme: 'system',
-        sidebarOpen: false,
+        sidebarOpen: true,
+        sidebarCollapsed: false,
         mobileMenuOpen: false,
         searchOpen: false,
         isMobile: false,
@@ -100,8 +106,22 @@ export const useAppStore = create<AppState>()(
           }
         },
 
-        toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+        // 侧边栏控制
+        toggleSidebar: () => {
+          const state = get();
+          if (state.isMobile) {
+            // 移动端：切换显示/隐藏
+            set({ sidebarOpen: !state.sidebarOpen });
+          } else {
+            // 桌面端：切换收起/展开
+            set({ sidebarCollapsed: !state.sidebarCollapsed });
+          }
+        },
         setSidebarOpen: (open) => set({ sidebarOpen: open }),
+        toggleSidebarCollapse: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+        setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
+        collapseSidebar: () => set({ sidebarCollapsed: true }),
+        expandSidebar: () => set({ sidebarCollapsed: false }),
         
         toggleMobileMenu: () => set((state) => ({ mobileMenuOpen: !state.mobileMenuOpen })),
         setMobileMenuOpen: (open) => set({ mobileMenuOpen: open }),
@@ -151,6 +171,7 @@ export const useAppStore = create<AppState>()(
         name: 'app-storage',
         partialize: (state) => ({
           theme: state.theme,
+          sidebarCollapsed: state.sidebarCollapsed, // 持久化侧边栏收起状态
           settings: state.settings,
           notifications: state.notifications.filter(n => !n.read), // 只持久化未读通知
         }),

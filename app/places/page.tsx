@@ -8,7 +8,7 @@ import { SearchBar } from '@/components/layout/SearchBar';
 import { PlacesList } from './components/PlacesList';
 import { FilterPanel } from './components/FilterPanel';
 import { SearchResults } from './components/SearchResults';
-import { generateMockPlaces } from '@/lib/data/mockData';
+import { api } from '@/lib/api/client';
 import { Place, PlaceCategory, CrowdLevel } from '@/types';
 import { Filter, Map, List, Grid } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -34,9 +34,24 @@ export default function PlacesPage() {
 
   // 加载场所数据
   useEffect(() => {
-    const mockPlaces = generateMockPlaces('beijing', 50);
-    setPlaces(mockPlaces);
-    setFilteredPlaces(mockPlaces);
+    const loadPlaces = async () => {
+      try {
+        const placesData = await api.place.getPlaces({
+          page: 1,
+          limit: 50,
+          latitude: 39.9042,  // 北京纬度
+          longitude: 116.4074, // 北京经度
+          radius: 10
+        });
+        setPlaces(placesData);
+        setFilteredPlaces(placesData);
+      } catch (error) {
+        console.error('Failed to load places:', error);
+        // 如果 API 调用失败，可以显示错误信息或使用备用数据
+      }
+    };
+
+    loadPlaces();
   }, []);
 
   // 应用筛选和排序

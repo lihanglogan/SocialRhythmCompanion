@@ -11,7 +11,7 @@ import { PersonalRecommend } from './components/PersonalRecommend';
 import { PreferenceSettings } from './components/PreferenceSettings';
 import { SuggestionHistory } from './components/SuggestionHistory';
 import { SmartReminder } from './components/SmartReminder';
-import { generateMockPlaces } from '@/lib/data/mockData';
+import { api } from '@/lib/api/client';
 import { 
   Brain, 
   Clock, 

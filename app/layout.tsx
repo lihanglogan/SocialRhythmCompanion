@@ -8,6 +8,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { TabBar } from '@/components/layout/TabBar';
 import { SearchBar } from '@/components/layout/SearchBar';
 import { useAppStore } from '@/lib/stores/appStore';
+import { AuthProvider } from '@/lib/hooks/useAuth.tsx';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -20,12 +21,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const [mounted, setMounted] = useState(false);
-  const { 
-    theme, 
-    sidebarOpen, 
-    searchOpen, 
+  const {
+    theme,
+    sidebarOpen,
+    sidebarCollapsed,
+    searchOpen,
     isMobile,
-    setIsMobile 
+    setIsMobile
   } = useAppStore();
 
   // 确保组件在客户端挂载后才渲染
@@ -76,7 +78,8 @@ export default function RootLayout({
         ></script>
       </head>
       <body className={`${inter.variable} font-sans antialiased bg-gray-50 dark:bg-gray-900 transition-colors duration-200`}>
-        <div className="min-h-screen flex flex-col">
+        <AuthProvider>
+          <div className="min-h-screen flex flex-col">
           {/* 头部导航栏 */}
           <Header />
           
@@ -85,8 +88,9 @@ export default function RootLayout({
             {!isMobile && (
               <div className={`
                 transition-all duration-300 ease-in-out
-                ${sidebarOpen ? 'w-64' : 'w-16'}
+                ${sidebarCollapsed ? 'w-16' : 'w-64'}
                 flex-shrink-0
+                bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700
               `}>
                 <Sidebar />
               </div>
@@ -172,6 +176,7 @@ export default function RootLayout({
             overflow-x: hidden;
           }
         `}</style>
+        </AuthProvider>
       </body>
     </html>
   );

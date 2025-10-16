@@ -1,0 +1,525 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户相关表
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  avatar    String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联关系
+  profile          UserProfile?
+  preferences      UserPreferences?
+  reports          Report[]
+  matches          Match[]
+  chatMessages     ChatMessage[]
+  locationShares   LocationShare[]
+  safetyReports    SafetyReport[]
+  reviews          UserReview[]     @relation("ReviewTarget")
+  givenReviews     UserReview[]     @relation("Reviewer")
+  achievements     UserAchievement[]
+  companionRequests CompanionRequest[]
+  companionMatches  CompanionMatch[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 个人信息
+  age              Int?
+  gender           Gender?
+  bio              String?
+  interests        String[]
+  occupation       String?
+  location         String?
+  
+  // 社交节奏偏好
+  activityLevel    ActivityLevel @default(MEDIUM)
+  preferredTimes   String[]      // 偏好时间段
+  avoidTimes       String[]      // 避免时间段
+  socialPreferences Json?        // 社交偏好设置
+
+  // 隐私设置
+  profileVisibility ProfileVisibility @default(PUBLIC)
+  locationSharing   Boolean           @default(false)
+  showOnlineStatus  Boolean           @default(true)
+  allowDirectMessages Boolean         @default(true)
+  showStats         Boolean           @default(true)
+  showBadges        Boolean           @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_profiles")
+}
+
+model UserPreferences {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 应用偏好
+  theme        Theme    @default(SYSTEM)
+  language     Language @default(ZH)
+  notifications Boolean  @default(true)
+
+  // 场所偏好
+  preferredCrowdLevel CrowdLevel @default(MEDIUM)
+  maxWaitTime         Int        @default(30)
+  avoidNoiseLevel     NoiseLevel[]
+  
+  // 无障碍需求
+  wheelchairAccessible    Boolean @default(false)
+  needsElevator          Boolean @default(false)
+  needsRamp              Boolean @default(false)
+  needsAccessibleParking Boolean @default(false)
+  needsAccessibleRestroom Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_preferences")
+}
+
+// 场所相关表
+model Place {
+  id          String      @id @default(cuid())
+  name        String
+  address     String
+  latitude    Float
+  longitude   Float
+  category    PlaceCategory
+  description String?
+  
+  // 营业时间 - 存储为 JSON
+  openHours   Json?
+  
+  // 无障碍信息
+  wheelchairAccessible    Boolean @default(false)
+  hasElevator            Boolean @default(false)
+  hasRamp                Boolean @default(false)
+  hasAccessibleParking   Boolean @default(false)
+  hasAccessibleRestroom  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联关系
+  reports          Report[]
+  suggestions      Suggestion[]
+  matches          Match[]
+  companionRequests CompanionRequest[]
+  companionMatches  CompanionMatch[]
+  placeStats       PlaceStats[]
+
+  @@map("places")
+}
+
+model PlaceStats {
+  id      String @id @default(cuid())
+  placeId String
+  place   Place  @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  // 实时状态
+  isOpen           Boolean
+  queueLength      Int       @default(0)
+  estimatedWaitTime Int      @default(0)
+  crowdDensity     Float     @default(0)
+  crowdLevel       CrowdLevel @default(LOW)
+  noiseLevel       NoiseLevel @default(QUIET)
+  
+  // 统计时间
+  recordedAt DateTime @default(now())
+
+  @@map("place_stats")
+}
+
+// 上报相关表
+model Report {
+  id       String     @id @default(cuid())
+  userId   String
+  placeId  String
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  place    Place      @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  reportType ReportType
+  data       Json       // 上报数据，包含各种字段
+  photos     String[]   // 照片URLs
+  
+  // 位置信息
+  latitude   Float?
+  longitude  Float?
+  
+  // 状态信息
+  status     ReportStatus @default(PENDING)
+  verified   Boolean      @default(false)
+  confidence Float        @default(0.5)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reports")
+}
+
+// 建议相关表
+model Suggestion {
+  id      String @id @default(cuid())
+  userId  String
+  placeId String
+  place   Place  @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  // 建议内容
+  type              SuggestionType
+  recommendedTime   DateTime
+  reason            String
+  confidence        Float          @default(0.5)
+  estimatedWaitTime Int            @default(0)
+  estimatedCrowdLevel CrowdLevel   @default(MEDIUM)
+  
+  // 替代选项
+  alternatives      Json?          // 存储替代选项数据
+
+  // 用户反馈
+  userFeedback      SuggestionFeedback?
+  feedbackReason    String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("suggestions")
+}
+
+// 匹配相关表
+model Match {
+  id            String      @id @default(cuid())
+  userId        String
+  placeId       String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  place         Place       @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  preferredTime DateTime
+  maxWaitTime   Int         @default(30)
+  message       String?
+  status        MatchStatus @default(PENDING)
+  
+  // 匹配偏好
+  preferences   Json?       // 存储匹配偏好
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("matches")
+}
+
+model CompanionRequest {
+  id            String           @id @default(cuid())
+  userId        String
+  placeId       String
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  place         Place            @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  preferredTime DateTime
+  flexibleTime  Int              @default(30) // 时间灵活度（分钟）
+  maxWaitTime   Int              @default(30)
+  message       String?
+  preferences   Json?            // 匹配偏好
+  status        MatchStatus      @default(PENDING)
+  
+  expiresAt     DateTime
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  // 关联的匹配
+  companionMatches CompanionMatch[]
+
+  @@map("companion_requests")
+}
+
+model CompanionMatch {
+  id          String           @id @default(cuid())
+  requestId   String
+  request     CompanionRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  
+  // 参与用户
+  users       Json             // 存储用户信息数组
+  
+  // 会面信息
+  scheduledTime   DateTime
+  meetingLatitude Float?
+  meetingLongitude Float?
+  
+  status      MatchStatus @default(PENDING)
+  chatRoomId  String?
+  
+  // 评价信息
+  rating      Float?
+  feedback    String?
+  
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+  updatedAt   DateTime @updatedAt
+
+  // 关联关系
+  chatRoom    ChatRoom?
+  locationShares LocationShare[]
+
+  @@map("companion_matches")
+}
+
+// 聊天相关表
+model ChatRoom {
+  id        String         @id @default(cuid())
+  matchId   String         @unique
+  match     CompanionMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  
+  participants Json         // 参与者信息
+  isActive     Boolean      @default(true)
+  lastActivity DateTime     @default(now())
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联关系
+  messages ChatMessage[]
+
+  @@map("chat_rooms")
+}
+
+model ChatMessage {
+  id         String      @id @default(cuid())
+  chatRoomId String
+  userId     String
+  chatRoom   ChatRoom    @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  content   String
+  type      MessageType @default(TEXT)
+  readBy    String[]    // 已读用户ID列表
+  
+  createdAt DateTime @default(now())
+
+  @@map("chat_messages")
+}
+
+// 位置分享表
+model LocationShare {
+  id        String         @id @default(cuid())
+  userId    String
+  matchId   String?
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  match     CompanionMatch? @relation(fields: [matchId], references: [id], onDelete: SetNull)
+
+  latitude  Float
+  longitude Float
+  accuracy  Float
+  isActive  Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("location_shares")
+}
+
+// 安全举报表
+model SafetyReport {
+  id           String       @id @default(cuid())
+  reporterId   String
+  targetUserId String?
+  matchId      String?
+  reporter     User         @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  reason       String
+  description  String
+  evidence     String[]     // 证据文件URLs
+  status       ReportStatus @default(PENDING)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("safety_reports")
+}
+
+// 用户评价表
+model UserReview {
+  id           String @id @default(cuid())
+  matchId      String
+  reviewerId   String
+  targetUserId String
+  reviewer     User   @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  target       User   @relation("ReviewTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  rating       Float  // 1-5
+  comment      String?
+  
+  // 分类评分
+  punctuality    Float @default(5)
+  communication  Float @default(5)
+  safety         Float @default(5)
+  friendliness   Float @default(5)
+  
+  createdAt DateTime @default(now())
+
+  @@unique([matchId, reviewerId, targetUserId])
+  @@map("user_reviews")
+}
+
+// 成就系统表
+model Achievement {
+  id          String @id @default(cuid())
+  name        String @unique
+  description String
+  icon        String
+  type        BadgeType
+  criteria    Json   // 获得条件
+
+  createdAt DateTime @default(now())
+
+  // 关联关系
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  achievementId String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  earnedAt DateTime @default(now())
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+// 枚举定义
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum ActivityLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ProfileVisibility {
+  PUBLIC
+  FRIENDS
+  PRIVATE
+}
+
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum Language {
+  ZH
+  EN
+}
+
+enum PlaceCategory {
+  RESTAURANT
+  HOSPITAL
+  BANK
+  GOVERNMENT
+  SHOPPING
+  TRANSPORT
+  EDUCATION
+  ENTERTAINMENT
+  OTHER
+}
+
+enum CrowdLevel {
+  LOW
+  MEDIUM
+  HIGH
+  VERY_HIGH
+}
+
+enum NoiseLevel {
+  QUIET
+  MODERATE
+  LOUD
+  VERY_LOUD
+}
+
+enum ReportType {
+  QUICK
+  DETAILED
+  WAIT_TIME
+  CROWD_LEVEL
+  NOISE_LEVEL
+  ACCESSIBILITY
+  HOURS
+  SERVICE_QUALITY
+  SPECIAL_STATUS
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum SuggestionType {
+  OPTIMAL_TIME
+  ALTERNATIVE_PLACE
+  AVOID_CROWD
+  BEST_ROUTE
+  WEATHER_BASED
+  PERSONAL_PREFERENCE
+}
+
+enum SuggestionFeedback {
+  ACCEPTED
+  REJECTED
+  IGNORED
+}
+
+enum MatchStatus {
+  PENDING
+  MATCHED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+enum MessageType {
+  TEXT
+  LOCATION
+  SYSTEM
+}
+
+enum BadgeType {
+  REPORTER
+  ACCURACY
+  FREQUENCY
+  SPECIAL
+}
